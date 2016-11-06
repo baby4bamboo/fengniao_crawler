@@ -5,12 +5,13 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 class Fengniao():
     def __init__(self):
-        self.url="http://bbs.fengniao.com/"
+        self.url="http://bbs.fengniao.com"
         user_agent="Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)"
         self.headers={"User-Agent":user_agent}
 
 
     def __getContentAuto(self,url):
+        print url
         req=urllib2.Request(url,headers=self.headers)
         resp=urllib2.urlopen(req)
         content=resp.read()
@@ -23,6 +24,27 @@ class Fengniao():
             html = gziper.read()
             return html
 
+    def __findbest(self):
+        content=[]
+        for j in range(8,22):
+            if j==0:
+                url_best="http://bbs.fengniao.com/jinghua-101.html"
+            else:
+                url_best="http://bbs.fengniao.com/jinghua-101-"+str(j)+".html"
+            posts_best=self.__getContentAuto(url_best)
+            p=re.compile(r'href="(\S+)" class="pic"')
+            list_of_best = p.findall(posts_best)
+            for i in list_of_best:
+                try:
+                    page_best=self.__getContentAuto(i)
+                    p=re.compile(r'href="(\S+)" class="return"')
+                    content_item = p.findall(page_best)
+                    if content_item != []:
+                        content.append(content_item[0])
+                except :
+                    pass
+                    print "this posts was deleted"
+        return content
 
     def __store2dic(self,url):
         
@@ -35,7 +57,9 @@ class Fengniao():
 
 
         p=re.compile(r'href="/(forum/\d+.html)"')
-        content = p.findall(html)
+        #content = p.findall(html)
+        content=self.__findbest()
+
         posts_number=0
         for i in content:
             posts=self.__getContentAuto(self.url+i)
@@ -52,8 +76,6 @@ class Fengniao():
                     posts_dic[j]=download_link
                 forum_dic[posts_number]=posts_dic
                 forum_dic["posts_number"]=posts_number
-
-
         return forum_dic
 
     def __download(self,html_dic):
@@ -80,16 +102,18 @@ class Fengniao():
                 try:
                     if download_link != "" and filename != "":
                         urllib.urlretrieve(download_link,filename)
-                        time.sleep(5)
+                        time.sleep(4)
                 except :
                     pass
                     print "download file fail"
-                
-        
+
+
     def getPhoto(self):
         url="http://bbs.fengniao.com/forum/forum_101.html"
         html_dic = self.__store2dic(url)
         self.__download(html_dic)
+        #self.__findbest()
+
 
 def main():
     obj=Fengniao()
